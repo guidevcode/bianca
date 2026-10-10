@@ -846,7 +846,17 @@ function closeModal() {
   }
 }
 modalOk.addEventListener('click', closeModal);
-modalSong.addEventListener('click', closeModal);
+modalSong.addEventListener('click', e => {
+  // No Android, o intent abre direto o app do Spotify (ou o site, se não estiver instalado).
+  // No iPhone, o próprio link https já abre o app.
+  if (/Android/i.test(navigator.userAgent)) {
+    e.preventDefault();
+    const web = modalSong.href;
+    location.href = `intent://${web.replace(/^https:\/\//, '')}#Intent;scheme=https;` +
+      `package=com.spotify.music;S.browser_fallback_url=${encodeURIComponent(web)};end`;
+  }
+  closeModal();
+});
 modalWrap.addEventListener('click', e => { if (e.target === modalWrap) closeModal(); });
 
 function collectGem(i) {
