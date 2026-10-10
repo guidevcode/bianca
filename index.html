@@ -487,32 +487,93 @@ html, body {
   50%      { transform: scale(1.12); box-shadow: 0 0 22px #1db954, 0 0 56px rgba(29,185,84,.9); }
 }
 
-#screen-suspense { background: #000; gap: 22px; padding: 0 22px; }
+#screen-suspense { background: #000; gap: 22px; padding: 0 22px; overflow: hidden; }
 #screen-suspense::after {
-  content: ''; position: absolute; inset: 0;
+  content: ''; position: absolute; inset: 0; z-index: 5;
   background: #fff; opacity: 0; pointer-events: none;
 }
+#screen-suspense.flash::after { animation: susFlash .6s ease forwards; }
+#screen-suspense.shake { animation: susQuake .5s linear; }
+
+#sus-warp {
+  position: absolute; inset: 0; pointer-events: none;
+  opacity: 0; transition: opacity .35s ease;
+}
+#sus-warp.on { opacity: 1; }
+.warp-line {
+  position: absolute; left: 50%; top: 50%;
+  width: 2px; height: 16vmax; border-radius: 2px;
+  background: linear-gradient(180deg, transparent, var(--c, #fff));
+  transform-origin: top center;
+  animation: warpFly var(--d, .8s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+@keyframes warpFly {
+  from { transform: rotate(var(--a)) translateY(2vmax) scaleY(.15); opacity: 0; }
+  25%  { opacity: 1; }
+  to   { transform: rotate(var(--a)) translateY(75vmax) scaleY(1.7); opacity: 1; }
+}
+
+#sus-pulse {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(255,40,110,.6) 100%);
+}
+#sus-pulse.beat { animation: susBeat .38s ease-out; }
+@keyframes susBeat {
+  0%   { opacity: .95; }
+  100% { opacity: 0; }
+}
+
 .sus-line {
-  font-size: clamp(12px, 4vw, 22px); line-height: 1.7;
-  text-align: center; opacity: 0;
+  position: relative; z-index: 2;
+  font-size: clamp(14px, 4.6vw, 26px); line-height: 1.7;
+  text-align: center; min-height: 1.7em;
   color: var(--white); text-shadow: 0 0 12px rgba(240,240,255,.6);
 }
-#sus-2 { color: var(--pink); text-shadow: 0 0 12px var(--pink), 0 0 30px var(--pink); }
-#screen-suspense.play #sus-1 { animation: susIn .5s ease .4s forwards; }
-#screen-suspense.play #sus-2 { animation: susIn .4s ease 1.6s forwards, susShake .1s linear 1.6s 10; }
-#screen-suspense.play::after { animation: susFlash .6s ease 2.8s forwards; }
-@keyframes susIn {
-  from { opacity: 0; transform: scale(.8); }
-  to   { opacity: 1; transform: scale(1); }
+#sus-1::after { content: '_'; animation: susCursor .4s steps(1) infinite; }
+@keyframes susCursor { 50% { opacity: 0; } }
+#sus-2 { opacity: 0; color: var(--pink); text-shadow: 0 0 12px var(--pink), 0 0 30px var(--pink); }
+#sus-2.slam {
+  animation: susSlam .32s cubic-bezier(.2,1.5,.4,1) forwards,
+             susGlitch .16s steps(2) .32s 5;
 }
-@keyframes susShake {
+@keyframes susSlam {
+  from { opacity: 0; transform: scale(3.4); filter: blur(6px); }
+  to   { opacity: 1; transform: scale(1);   filter: blur(0); }
+}
+@keyframes susGlitch {
+  0%   { translate: -4px 1px; text-shadow: -4px 0 var(--cyan), 4px 0 var(--yellow); }
+  50%  { translate: 4px -2px; text-shadow: 4px 0 var(--cyan), -4px 0 var(--yellow); }
+  100% { translate: 0 0; }
+}
+#screen-suspense.count .sus-line { opacity: 0 !important; animation: none; transition: opacity .2s ease; }
+
+#sus-count {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(70px, 30vw, 190px);
+  color: var(--yellow);
+  text-shadow: 0 0 24px var(--yellow), 0 0 70px rgba(255,231,95,.6);
+}
+#sus-count span { animation: susNum .47s ease-out forwards; }
+@keyframes susNum {
+  0%   { opacity: 0; transform: scale(.2) rotate(-12deg); }
+  30%  { opacity: 1; transform: scale(1.08) rotate(0deg); }
+  70%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+@keyframes susQuake {
   0%,100% { translate: 0 0; }
-  25%      { translate: -3px 1px; }
-  75%      { translate: 3px -1px; }
+  10% { translate: -9px 5px; }
+  25% { translate: 8px -6px; }
+  40% { translate: -6px -4px; }
+  55% { translate: 6px 5px; }
+  70% { translate: -4px 2px; }
+  85% { translate: 3px -2px; }
 }
 @keyframes susFlash {
   0%   { opacity: 0; }
-  45%  { opacity: .9; }
+  45%  { opacity: .95; }
   100% { opacity: 0; }
 }
 
@@ -577,8 +638,11 @@ html, body {
 </div>
 
 <div id="screen-suspense" class="screen">
-  <div class="sus-line" id="sus-1">ESPERA...</div>
+  <div id="sus-warp"></div>
+  <div id="sus-pulse"></div>
+  <div class="sus-line" id="sus-1"></div>
   <div class="sus-line" id="sus-2">AINDA NÃO ACABOU</div>
+  <div id="sus-count"></div>
 </div>
 
 <div id="screen-phase2" class="screen">
@@ -881,44 +945,109 @@ function closeModal() {
   }
 }
 
+const SUS_WORD  = 'ESPERA...';
+const SUS_TYPE  = 250;   // início da digitação (ms)
+const SUS_SLAM  = 1300;  // entrada da segunda frase
+const SUS_COUNT = 2300;  // início da contagem 3-2-1
+const SUS_STEP  = 480;
+const SUS_END   = SUS_COUNT + SUS_STEP * 3;
+
 function playSuspenseSound() {
   if (muted) return;
   try {
     const ctx = ensureAudio();
     const t0  = ctx.currentTime;
-    [.4, .62, 1.6, 1.82].forEach(dt => {
+    const tone = (type, f0, f1, at, dur, vol) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       o.connect(g); g.connect(ctx.destination);
-      o.type = 'sine';
-      o.frequency.setValueAtTime(70, t0 + dt);
-      o.frequency.exponentialRampToValueAtTime(38, t0 + dt + .18);
-      g.gain.setValueAtTime(.5, t0 + dt);
-      g.gain.exponentialRampToValueAtTime(.001, t0 + dt + .2);
-      o.start(t0 + dt); o.stop(t0 + dt + .21);
-    });
+      o.type = type;
+      o.frequency.setValueAtTime(f0, t0 + at);
+      if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t0 + at + dur);
+      g.gain.setValueAtTime(vol, t0 + at);
+      g.gain.exponentialRampToValueAtTime(.001, t0 + at + dur);
+      o.start(t0 + at); o.stop(t0 + at + dur + .02);
+    };
+    [...SUS_WORD].forEach((_, i) => tone('square', 900, 900, (SUS_TYPE + i * 85) / 1000, .03, .05));
+    [.3, .52, SUS_SLAM / 1000, SUS_SLAM / 1000 + .22].forEach(at => tone('sine', 72, 36, at, .2, .5));
+    tone('sawtooth', 160, 40, SUS_SLAM / 1000, .4, .16);
+    [392, 494, 587].forEach((f, i) => tone('square', f, f, (SUS_COUNT + i * SUS_STEP) / 1000, .14, .1));
+    [0, 1, 2].forEach(i => tone('sine', 72, 36, (SUS_COUNT + i * SUS_STEP) / 1000, .2, .45));
+
     const o = ctx.createOscillator();
     const g = ctx.createGain();
     o.connect(g); g.connect(ctx.destination);
     o.type = 'sawtooth';
-    o.frequency.setValueAtTime(110, t0 + 2.3);
-    o.frequency.exponentialRampToValueAtTime(880, t0 + 3);
-    g.gain.setValueAtTime(.001, t0 + 2.3);
-    g.gain.exponentialRampToValueAtTime(.09, t0 + 2.95);
-    g.gain.exponentialRampToValueAtTime(.001, t0 + 3.1);
-    o.start(t0 + 2.3); o.stop(t0 + 3.12);
+    const a = t0 + SUS_COUNT / 1000, b = t0 + SUS_END / 1000;
+    o.frequency.setValueAtTime(110, a);
+    o.frequency.exponentialRampToValueAtTime(1320, b);
+    g.gain.setValueAtTime(.001, a);
+    g.gain.exponentialRampToValueAtTime(.08, b - .05);
+    g.gain.exponentialRampToValueAtTime(.001, b + .08);
+    o.start(a); o.stop(b + .1);
+    [523, 784, 1047].forEach(f => tone('triangle', f, f, SUS_END / 1000, .5, .09));
   } catch(e) {}
 }
 
-let suspenseTimer;
+const sus1     = document.getElementById('sus-1');
+const sus2     = document.getElementById('sus-2');
+const susWarp  = document.getElementById('sus-warp');
+const susPulse = document.getElementById('sus-pulse');
+const susCount = document.getElementById('sus-count');
+const susTimers = [];
+
+function makeWarpLines() {
+  const colors = ['#ff5fd2', '#5ff0ff', '#ffe75f', '#ffffff'];
+  for (let i = 0; i < 48; i++) {
+    const s = document.createElement('div');
+    s.className = 'warp-line';
+    s.style.cssText =
+      '--a:' + (Math.random()*360).toFixed(1) + 'deg;' +
+      '--d:' + (Math.random()*.5+.45).toFixed(2) + 's;' +
+      '--delay:-' + Math.random().toFixed(2) + 's;' +
+      '--c:' + colors[i % colors.length] + ';';
+    susWarp.appendChild(s);
+  }
+}
+
+function susBeat() {
+  susPulse.classList.remove('beat');
+  susPulse.offsetHeight;
+  susPulse.classList.add('beat');
+}
+
 function playSuspense() {
-  screenSuspense.classList.remove('play');
-  screenSuspense.offsetHeight;
-  screenSuspense.classList.add('play');
+  const at = (ms, fn) => susTimers.push(setTimeout(fn, ms));
+  susTimers.forEach(clearTimeout);
+  susTimers.length = 0;
+  screenSuspense.classList.remove('shake', 'flash', 'count');
+  susWarp.classList.remove('on');
+  sus2.classList.remove('slam');
+  sus1.textContent   = '';
+  susCount.innerHTML = '';
+
   showScreen(screenSuspense);
   playSuspenseSound();
-  clearTimeout(suspenseTimer);
-  suspenseTimer = setTimeout(() => showScreen(screenPhase2), 3200);
+
+  [...SUS_WORD].forEach((_, i) =>
+    at(SUS_TYPE + i * 85, () => { sus1.textContent = SUS_WORD.slice(0, i + 1); }));
+  at(300, susBeat);
+  at(520, susBeat);
+  at(SUS_SLAM, () => {
+    sus2.classList.add('slam');
+    screenSuspense.classList.add('shake');
+    susBeat();
+  });
+  at(SUS_SLAM + 220, susBeat);
+  at(SUS_COUNT, () => {
+    screenSuspense.classList.remove('shake');
+    screenSuspense.classList.add('count');
+    susWarp.classList.add('on');
+  });
+  ['3', '2', '1'].forEach((n, i) =>
+    at(SUS_COUNT + i * SUS_STEP, () => { susCount.innerHTML = '<span>' + n + '</span>'; susBeat(); }));
+  at(SUS_END, () => screenSuspense.classList.add('flash'));
+  at(SUS_END + 220, () => showScreen(screenPhase2));
 }
 modalOk.addEventListener('click', closeModal);
 modalSong.addEventListener('click', e => {
@@ -1201,6 +1330,7 @@ makeIntroStars();
 makeIntroStars('stars-bg-2');
 makeIntroStars('p2-bg', 40);
 makeEqBars();
+makeWarpLines();
 setupFallbacks();
 </script>
 </body>
