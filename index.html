@@ -487,6 +487,35 @@ html, body {
   50%      { transform: scale(1.12); box-shadow: 0 0 22px #1db954, 0 0 56px rgba(29,185,84,.9); }
 }
 
+#screen-suspense { background: #000; gap: 22px; padding: 0 22px; }
+#screen-suspense::after {
+  content: ''; position: absolute; inset: 0;
+  background: #fff; opacity: 0; pointer-events: none;
+}
+.sus-line {
+  font-size: clamp(12px, 4vw, 22px); line-height: 1.7;
+  text-align: center; opacity: 0;
+  color: var(--white); text-shadow: 0 0 12px rgba(240,240,255,.6);
+}
+#sus-2 { color: var(--pink); text-shadow: 0 0 12px var(--pink), 0 0 30px var(--pink); }
+#screen-suspense.play #sus-1 { animation: susIn .5s ease .4s forwards; }
+#screen-suspense.play #sus-2 { animation: susIn .4s ease 1.6s forwards, susShake .1s linear 1.6s 10; }
+#screen-suspense.play::after { animation: susFlash .6s ease 2.8s forwards; }
+@keyframes susIn {
+  from { opacity: 0; transform: scale(.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes susShake {
+  0%,100% { translate: 0 0; }
+  25%      { translate: -3px 1px; }
+  75%      { translate: 3px -1px; }
+}
+@keyframes susFlash {
+  0%   { opacity: 0; }
+  45%  { opacity: .9; }
+  100% { opacity: 0; }
+}
+
 #modal-song {
   display: none; align-items: center; justify-content: center;
   font-family: 'Press Start 2P', monospace;
@@ -545,6 +574,11 @@ html, body {
     </div>
     <button class="btn-start" id="btn-start">✦ COMEÇAR ✦</button>
   </div>
+</div>
+
+<div id="screen-suspense" class="screen">
+  <div class="sus-line" id="sus-1">ESPERA...</div>
+  <div class="sus-line" id="sus-2">AINDA NÃO ACABOU</div>
 </div>
 
 <div id="screen-phase2" class="screen">
@@ -629,7 +663,7 @@ html, body {
       <p>E aí você apareceu, com toda simpatia e proatividade, segurando aquele elevador e perguntando se eu iria subir ou descer kkkkkkkkkk.</p>
       <p>Eu adoro você!</p>
     </div>
-    <button class="btn-replay" id="btn-replay">↺ JOGAR DE NOVO</button>
+    <button class="btn-replay" id="btn-replay">CONTINUAR ►</button>
   </div>
 </div>
 
@@ -656,6 +690,7 @@ const modalMsg     = document.getElementById('modal-msg');
 const modalOk      = document.getElementById('modal-ok');
 const muteBtn      = document.getElementById('mute-btn');
 const screenPhase2 = document.getElementById('screen-phase2');
+const screenSuspense = document.getElementById('screen-suspense');
 const btnPhase2    = document.getElementById('btn-phase2');
 const hudIcon      = document.getElementById('hud-icon');
 const hintEl       = document.getElementById('hint');
@@ -710,7 +745,7 @@ let audioCtx = null;
 let muted    = false;
 
 function showScreen(s) {
-  [screenIntro, screenPhase2, screenGame, screenFinal].forEach(el => el.classList.remove('active'));
+  [screenIntro, screenSuspense, screenPhase2, screenGame, screenFinal].forEach(el => el.classList.remove('active'));
   s.classList.add('active');
 }
 
@@ -838,12 +873,52 @@ function openModal(idx) {
 function closeModal() {
   modalWrap.classList.remove('open');
   if (phase === 2) {
-    setTimeout(() => { playFinal(); showScreen(screenFinal); }, 500);
+    setTimeout(startGame, 400);
   } else if (collected < TOTAL) {
     gameOn = true;
   } else {
-    setTimeout(() => showScreen(screenPhase2), 500);
+    setTimeout(() => { playFinal(); showScreen(screenFinal); }, 500);
   }
+}
+
+function playSuspenseSound() {
+  if (muted) return;
+  try {
+    const ctx = ensureAudio();
+    const t0  = ctx.currentTime;
+    [.4, .62, 1.6, 1.82].forEach(dt => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(70, t0 + dt);
+      o.frequency.exponentialRampToValueAtTime(38, t0 + dt + .18);
+      g.gain.setValueAtTime(.5, t0 + dt);
+      g.gain.exponentialRampToValueAtTime(.001, t0 + dt + .2);
+      o.start(t0 + dt); o.stop(t0 + dt + .21);
+    });
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(110, t0 + 2.3);
+    o.frequency.exponentialRampToValueAtTime(880, t0 + 3);
+    g.gain.setValueAtTime(.001, t0 + 2.3);
+    g.gain.exponentialRampToValueAtTime(.09, t0 + 2.95);
+    g.gain.exponentialRampToValueAtTime(.001, t0 + 3.1);
+    o.start(t0 + 2.3); o.stop(t0 + 3.12);
+  } catch(e) {}
+}
+
+let suspenseTimer;
+function playSuspense() {
+  screenSuspense.classList.remove('play');
+  screenSuspense.offsetHeight;
+  screenSuspense.classList.add('play');
+  showScreen(screenSuspense);
+  playSuspenseSound();
+  clearTimeout(suspenseTimer);
+  suspenseTimer = setTimeout(() => showScreen(screenPhase2), 3200);
 }
 modalOk.addEventListener('click', closeModal);
 modalSong.addEventListener('click', e => {
@@ -855,9 +930,8 @@ modalSong.addEventListener('click', e => {
     location.href = `intent://${web.replace(/^https:\/\//, '')}#Intent;scheme=https;` +
       `package=com.spotify.music;S.browser_fallback_url=${encodeURIComponent(web)};end`;
   }
-  closeModal();
 });
-modalWrap.addEventListener('click', e => { if (e.target === modalWrap) closeModal(); });
+modalWrap.addEventListener('click', e => { if (e.target === modalWrap && phase !== 2) closeModal(); });
 
 function collectGem(i) {
   if (gemDone[i]) return;
@@ -1060,6 +1134,7 @@ function reachGoal() {
   setTimeout(() => {
     modalEl.classList.add('song');
     modalIcon.textContent = '♪';
+    modalOk.textContent   = '↺ JOGAR DE NOVO';
     modalNum.textContent  = '★ FASE 2 COMPLETA ★';
     modalMsg.textContent  = 'só pra reforça o quanto gosto de ti, em breve tem mais fases...';
     modalEl.style.animation = 'none';
@@ -1077,6 +1152,7 @@ function startGame() {
   hudIcon.textContent = '★';
   modalEl.classList.remove('song');
   modalIcon.textContent = '★';
+  modalOk.textContent   = 'CONTINUAR ►';
   collected = 0;
   gemDone = MESSAGES.map(() => false);
   kUp = kDown = kLeft = kRight = false;
@@ -1102,7 +1178,7 @@ function startGame() {
 
 btnStart.addEventListener('click',  startGame);
 btnPhase2.addEventListener('click', startPhase2);
-btnReplay.addEventListener('click', startGame);
+btnReplay.addEventListener('click', playSuspense);
 
 let resizeTimer;
 window.addEventListener('resize', () => {
