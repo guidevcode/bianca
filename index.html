@@ -44,7 +44,7 @@ html, body {
 }
 .screen.active { opacity: 1; pointer-events: auto; }
 
-#screen-intro {
+#screen-intro, #screen-phase2 {
   background: var(--dark);
   overflow-y: auto;
   touch-action: pan-y;
@@ -432,6 +432,75 @@ html, body {
 }
 .btn-replay:active { transform: translateY(5px); box-shadow: 0 2px 0 #9e007f; }
 
+#p2-bg {
+  display: none; position: absolute; inset: 0; overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 22%, rgba(29,185,84,.38) 0%, transparent 42%),
+    linear-gradient(180deg, #04160f 0%, #0a2a22 45%, #160a33 100%);
+}
+#game-world.phase2 #p2-bg { display: block; }
+#game-world.phase2 #game-bg,
+#game-world.phase2 #game-bg-fallback { display: none !important; }
+
+#p2-eq {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 38%;
+  display: flex; align-items: flex-end; gap: 3px; padding: 0 4px;
+  opacity: .5;
+}
+#p2-eq span {
+  flex: 1; height: 100%; transform-origin: bottom;
+  background: linear-gradient(180deg, #1db954, rgba(29,185,84,.05));
+  border-radius: 3px 3px 0 0;
+  animation: eqBar var(--d, 1.2s) ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0s);
+}
+@keyframes eqBar {
+  from { transform: scaleY(.12); }
+  to   { transform: scaleY(var(--h, .8)); }
+}
+
+.p2-note {
+  position: absolute; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: Arial, Helvetica, sans-serif; font-size: 22px;
+  color: var(--cyan); text-shadow: 0 0 8px var(--cyan);
+  z-index: 9; pointer-events: none;
+  animation: gemFloat 2.8s ease-in-out infinite;
+  transition: opacity .4s ease;
+}
+.p2-note:nth-child(even) {
+  color: var(--pink); text-shadow: 0 0 8px var(--pink);
+  animation-delay: -1.2s;
+}
+.p2-note.got { opacity: 0; }
+
+#p2-goal {
+  display: none; position: absolute; width: 64px; height: 64px;
+  border-radius: 50%; z-index: 10; pointer-events: none;
+  box-shadow: 0 0 14px #1db954, 0 0 34px rgba(29,185,84,.7);
+  animation: goalPulse 1.6s ease-in-out infinite;
+}
+#p2-goal svg { width: 100%; height: 100%; display: block; }
+#game-world.phase2 #p2-goal { display: block; }
+@keyframes goalPulse {
+  0%,100% { transform: scale(1); }
+  50%      { transform: scale(1.12); box-shadow: 0 0 22px #1db954, 0 0 56px rgba(29,185,84,.9); }
+}
+
+#modal-song {
+  display: none; align-items: center; justify-content: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(9px, 2.8vw, 12px); line-height: 1.4;
+  color: var(--dark); background: #1db954;
+  text-decoration: none; padding: 14px 22px; border-radius: 5px;
+  min-height: 50px;
+  box-shadow: 0 4px 0 #0f7a36, 0 0 16px rgba(29,185,84,.5);
+}
+#modal.song #modal-song { display: flex; }
+#modal.song #modal-msg { text-align: center; }
+#modal.song #modal-icon,
+#screen-phase2 .title-star { animation: gemFloat 2.8s ease-in-out infinite; }
+
 #scanlines {
   position: fixed; inset: 0; pointer-events: none; z-index: 999;
   background: repeating-linear-gradient(
@@ -478,6 +547,20 @@ html, body {
   </div>
 </div>
 
+<div id="screen-phase2" class="screen">
+  <div class="stars-bg" id="stars-bg-2"></div>
+  <div class="intro-wrap">
+    <div class="title-block">
+      <span class="title-line">FASE 2</span>
+      <span class="title-star">♪</span>
+    </div>
+    <div class="intro-box">
+      Se prepare para<br>a próxima jornada,<br>riqueza ❤️
+    </div>
+    <button class="btn-start" id="btn-phase2">✦ CONTINUAR ✦</button>
+  </div>
+</div>
+
 <div id="screen-game" class="screen">
 
   <div id="hud">
@@ -493,6 +576,7 @@ html, body {
   <div id="game-world">
     <div id="game-bg"></div>
     <div id="game-bg-fallback"></div>
+    <div id="p2-bg"><div id="p2-eq"></div></div>
     <div id="game-vignette"></div>
 
     <div id="player">
@@ -501,6 +585,15 @@ html, body {
     </div>
 
     <div id="stars-wrap"></div>
+    <div id="p2-trail"></div>
+    <div id="p2-goal">
+      <svg viewBox="0 0 64 64" aria-label="Spotify">
+        <circle cx="32" cy="32" r="32" fill="#1db954"/>
+        <path d="M15 24c11.500-3.500 24-2.500 34 3" fill="none" stroke="#0d0221" stroke-width="5.500" stroke-linecap="round"/>
+        <path d="M17.500 33.500c9.500-2.700 19.500-1.900 27.500 2.600" fill="none" stroke="#0d0221" stroke-width="4.600" stroke-linecap="round"/>
+        <path d="M20 42.500c7.500-2 15-1.400 21.500 2.200" fill="none" stroke="#0d0221" stroke-width="3.800" stroke-linecap="round"/>
+      </svg>
+    </div>
   </div>
 
   <div id="hint">MOVA-SE PELO CENÁRIO E COLETE AS ★</div>
@@ -519,6 +612,7 @@ html, body {
     <span id="modal-icon">★</span>
     <div id="modal-num"></div>
     <div id="modal-msg"></div>
+    <a id="modal-song" href="https://open.spotify.com/track/6kU7m0qhXWMyoLw69gk3b1" target="_blank" rel="noopener">▶ OUVIR NO SPOTIFY</a>
     <button id="modal-ok">CONTINUAR ►</button>
   </div>
 </div>
@@ -561,6 +655,15 @@ const modalNum     = document.getElementById('modal-num');
 const modalMsg     = document.getElementById('modal-msg');
 const modalOk      = document.getElementById('modal-ok');
 const muteBtn      = document.getElementById('mute-btn');
+const screenPhase2 = document.getElementById('screen-phase2');
+const btnPhase2    = document.getElementById('btn-phase2');
+const hudIcon      = document.getElementById('hud-icon');
+const hintEl       = document.getElementById('hint');
+const p2Trail      = document.getElementById('p2-trail');
+const p2Goal       = document.getElementById('p2-goal');
+const modalEl      = document.getElementById('modal');
+const modalIcon    = document.getElementById('modal-icon');
+const modalSong    = document.getElementById('modal-song');
 
 const STAR_POS = [
   { x: .18, y: .28 },
@@ -583,6 +686,16 @@ const SPEED  = 3.6;
 const COLL_R = 52;
 const NEAR_R = 110;
 
+const P2_START = { x: .16, y: .84 };
+const P2_GOAL  = { x: .78, y: .22 };
+const P2_NOTES = 8;
+const HINT_P1  = 'MOVA-SE PELO CENÁRIO E COLETE AS ★';
+const HINT_P2  = 'ANDE ATÉ O SÍMBOLO DO SPOTIFY';
+
+let phase   = 1;
+let noteEls = [];
+let goalX = 0, goalY = 0, p2StartDist = 1;
+
 let px = 0, py = 0;
 let collected = 0;
 let gemDone   = [];
@@ -597,7 +710,7 @@ let audioCtx = null;
 let muted    = false;
 
 function showScreen(s) {
-  [screenIntro, screenGame, screenFinal].forEach(el => el.classList.remove('active'));
+  [screenIntro, screenPhase2, screenGame, screenFinal].forEach(el => el.classList.remove('active'));
   s.classList.add('active');
 }
 
@@ -605,9 +718,9 @@ function worldSize() {
   return { w: gameWorld.offsetWidth, h: gameWorld.offsetHeight };
 }
 
-function makeIntroStars() {
-  const c = document.getElementById('stars-bg');
-  for (let i = 0; i < 65; i++) {
+function makeIntroStars(id = 'stars-bg', n = 65) {
+  const c = document.getElementById(id);
+  for (let i = 0; i < n; i++) {
     const s = document.createElement('div');
     s.className = 'star-twinkle';
     const sz = Math.random() * 2.5 + .8;
@@ -724,13 +837,16 @@ function openModal(idx) {
 }
 function closeModal() {
   modalWrap.classList.remove('open');
-  if (collected < TOTAL) {
+  if (phase === 2) {
+    setTimeout(() => { playFinal(); showScreen(screenFinal); }, 500);
+  } else if (collected < TOTAL) {
     gameOn = true;
   } else {
-    setTimeout(() => { playFinal(); showScreen(screenFinal); }, 500);
+    setTimeout(() => showScreen(screenPhase2), 500);
   }
 }
 modalOk.addEventListener('click', closeModal);
+modalSong.addEventListener('click', closeModal);
 modalWrap.addEventListener('click', e => { if (e.target === modalWrap) closeModal(); });
 
 function collectGem(i) {
@@ -784,6 +900,19 @@ function loop() {
     gem.classList.toggle('nearby', dist < NEAR_R);
     if (dist < COLL_R) collectGem(i);
   });
+
+  if (phase === 2) {
+    noteEls.forEach(n => {
+      if (n.classList.contains('got')) return;
+      const nx = parseFloat(n.style.left) + 15;
+      const ny = parseFloat(n.style.top)  + 15;
+      if (Math.hypot(px - nx, py - ny) < 40) n.classList.add('got');
+    });
+    const dist = Math.hypot(px - goalX, py - goalY);
+    const prog = 1 - (dist - COLL_R) / (p2StartDist - COLL_R);
+    progressFill.style.width = `${Math.max(0, Math.min(1, prog)) * 100}%`;
+    if (dist < COLL_R) reachGoal();
+  }
 
 }
 
@@ -840,7 +969,104 @@ muteBtn.addEventListener('click', () => {
   muteBtn.textContent = muted ? '🔇' : '🔊';
 });
 
+function showHint(text) {
+  hintEl.textContent      = text;
+  hintEl.style.transition = 'none';
+  hintEl.style.opacity    = '1';
+  hintEl.offsetHeight;
+  hintEl.style.transition = 'opacity 1s ease';
+  setTimeout(() => { hintEl.style.opacity = '0'; }, 4000);
+}
+
+function makeEqBars() {
+  const c = document.getElementById('p2-eq');
+  for (let i = 0; i < 28; i++) {
+    const s = document.createElement('span');
+    s.style.cssText =
+      `--h:${(Math.random()*.75+.25).toFixed(2)};` +
+      `--d:${(Math.random()*.9+.6).toFixed(2)}s;` +
+      `--delay:-${(Math.random()*2).toFixed(2)}s;`;
+    c.appendChild(s);
+  }
+}
+
+function layoutPhase2() {
+  const { w, h } = worldSize();
+  goalX = P2_GOAL.x * w;
+  goalY = P2_GOAL.y * h;
+  p2Goal.style.left = `${goalX - 32}px`;
+  p2Goal.style.top  = `${goalY - 32}px`;
+
+  const got = noteEls.map(el => el.classList.contains('got'));
+  p2Trail.innerHTML = '';
+  noteEls = [];
+  for (let i = 1; i <= P2_NOTES; i++) {
+    const t = i / (P2_NOTES + 1);
+    const x = (P2_START.x + (P2_GOAL.x - P2_START.x) * t) * w;
+    const y = (P2_START.y + (P2_GOAL.y - P2_START.y) * t + Math.sin(t * Math.PI * 2) * .1) * h;
+    const el = document.createElement('div');
+    el.className = 'p2-note';
+    if (got[i - 1]) el.classList.add('got');
+    el.textContent = i % 2 ? '♪' : '♫';
+    el.style.left = `${x - 15}px`;
+    el.style.top  = `${y - 15}px`;
+    p2Trail.appendChild(el);
+    noteEls.push(el);
+  }
+}
+
+function startPhase2() {
+  phase = 2;
+  kUp = kDown = kLeft = kRight = false;
+  swipeActive = false; swipeDX = 0; swipeDY = 0;
+  gameWorld.classList.add('phase2');
+  starsWrap.innerHTML = '';
+  gemEls  = [];
+  noteEls = [];
+  hudIcon.textContent      = '♪';
+  starCountEl.textContent  = 'FASE 2';
+  progressFill.style.width = '0%';
+
+  showScreen(screenGame);
+
+  requestAnimationFrame(() => {
+    const { w, h } = worldSize();
+    px = Math.max(PSIZE/2, Math.min(w - PSIZE/2, P2_START.x * w));
+    py = Math.max(PSIZE/2, Math.min(h - PSIZE/2, P2_START.y * h));
+    playerEl.style.left = `${px - PSIZE/2}px`;
+    playerEl.style.top  = `${py - PSIZE/2}px`;
+    layoutPhase2();
+    p2StartDist = Math.max(COLL_R + 1, Math.hypot(px - goalX, py - goalY));
+    gameOn = true;
+    showHint(HINT_P2);
+  });
+}
+
+function reachGoal() {
+  gameOn = false;
+  spawnParticles(goalX, goalY);
+  playCollect();
+  progressFill.style.width = '100%';
+  setTimeout(() => {
+    modalEl.classList.add('song');
+    modalIcon.textContent = '♪';
+    modalNum.textContent  = '★ FASE 2 COMPLETA ★';
+    modalMsg.textContent  = 'Tem uma música te esperando.';
+    modalEl.style.animation = 'none';
+    modalEl.offsetHeight;
+    modalEl.style.animation = '';
+    modalWrap.classList.add('open');
+  }, 280);
+}
+
 function startGame() {
+  phase = 1;
+  gameWorld.classList.remove('phase2');
+  p2Trail.innerHTML = '';
+  noteEls = [];
+  hudIcon.textContent = '★';
+  modalEl.classList.remove('song');
+  modalIcon.textContent = '★';
   collected = 0;
   gemDone = MESSAGES.map(() => false);
   kUp = kDown = kLeft = kRight = false;
@@ -860,34 +1086,35 @@ function startGame() {
     gameOn = true;
     loop();
 
-    const hintEl = document.getElementById('hint');
-    hintEl.style.transition = 'none';
-    hintEl.style.opacity    = '1';
-    hintEl.offsetHeight;
-    hintEl.style.transition = 'opacity 1s ease';
-    setTimeout(() => { hintEl.style.opacity = '0'; }, 4000);
+    showHint(HINT_P1);
   });
 }
 
 btnStart.addEventListener('click',  startGame);
+btnPhase2.addEventListener('click', startPhase2);
 btnReplay.addEventListener('click', startGame);
 
 let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
-    if (screenGame.classList.contains('active')) createGems();
+    if (!screenGame.classList.contains('active')) return;
+    if (phase === 2) layoutPhase2(); else createGems();
   }, 120);
 });
 
 document.addEventListener('touchmove', e => {
   if (!screenFinal.classList.contains('active') &&
-      !screenIntro.classList.contains('active')) {
+      !screenIntro.classList.contains('active') &&
+      !screenPhase2.classList.contains('active')) {
     e.preventDefault();
   }
 }, { passive: false });
 
 makeIntroStars();
+makeIntroStars('stars-bg-2');
+makeIntroStars('p2-bg', 40);
+makeEqBars();
 setupFallbacks();
 </script>
 </body>
