@@ -701,22 +701,6 @@ html, body {
 }
 #screen-st.play #st-sub { animation: riseIn .8s ease 6.6s both; }
 
-#st-tv {
-  position: relative; width: 236px; padding: 14px 14px 16px;
-  border-radius: 18px;
-  background: linear-gradient(#3b2a1a, #24180e);
-  box-shadow: inset 0 0 0 3px #1a110a, 0 10px 30px rgba(0,0,0,.6), 0 0 40px rgba(229,9,20,.25);
-  opacity: 0;
-}
-#screen-st.play #st-tv { animation: riseIn .8s ease .3s both; }
-#st-tv-screen { width: 208px; height: 200px; border-radius: 12px; overflow: hidden; background: #000; }
-#st-tv-screen iframe, #st-player { width: 100%; height: 100%; display: block; border: 0; }
-#st-tv-hint {
-  display: none; margin-top: 10px;
-  font-size: 7px; line-height: 1.6; color: rgba(255,255,255,.7); text-align: center;
-}
-#st-tv.need-tap #st-tv-hint { display: block; }
-
 #btn-st {
   font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700;
   font-size: clamp(14px, 4.2vw, 18px); letter-spacing: .25em;
@@ -806,6 +790,34 @@ html, body {
   opacity: 0; transition: opacity .2s;
 }
 #p3-caught.show { opacity: 1; }
+
+#p3-tree {
+  display: none; position: absolute; width: 120px; height: 150px;
+  z-index: 8; pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(0,0,0,.8));
+}
+#p3-tree svg { width: 100%; height: 100%; display: block; }
+#game-world.phase3 #p3-tree { display: block; }
+#game-world.phase3 #player { transition: transform .35s ease, opacity .35s ease; }
+#player.hiding {
+  transform: scale(.42); opacity: .55;
+  animation: none; box-shadow: none; border-color: rgba(255,95,210,.4);
+}
+#p3-portal { transition: opacity .6s ease, transform .6s ease, filter .6s ease; }
+#p3-portal.closed { opacity: .15; transform: scale(.45); filter: grayscale(1); animation: none; }
+#demo.gone { opacity: 0; }
+#p3-msg {
+  position: absolute; left: 50%; top: 54px; transform: translateX(-50%);
+  z-index: 30; pointer-events: none;
+  max-width: 92%; width: max-content; text-align: center; line-height: 1.5;
+  font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700;
+  font-size: clamp(11px, 3.4vw, 16px); letter-spacing: .1em;
+  color: #ff4d4d; text-shadow: 0 0 10px rgba(229,9,20,.9), 0 0 2px #000;
+  background: rgba(0,0,0,.6); border: 1px solid rgba(229,9,20,.6);
+  border-radius: 4px; padding: 8px 14px;
+  opacity: 0; transition: opacity .3s ease;
+}
+#p3-msg.show { opacity: 1; }
 
 /* ---------- Final: parede de luzes ---------- */
 #screen-lights {
@@ -931,10 +943,6 @@ html, body {
       <div class="st-bottom"><span class="st-l">I</span><span class="st-l">N</span><span class="st-l">V</span><span class="st-l">E</span><span class="st-l">R</span><span class="st-l">T</span><span class="st-l">I</span><span class="st-l">D</span><span class="st-l">O</span></div>
     </div>
     <div id="st-sub">FASE 3 · FUJA DO DEMOGORGON</div>
-    <div id="st-tv">
-      <div id="st-tv-screen"><div id="st-player"></div></div>
-      <div id="st-tv-hint">TOQUE NA TV PARA LIGAR A MÚSICA</div>
-    </div>
     <button id="btn-st">ENTRAR ►</button>
   </div>
 </div>
@@ -972,6 +980,22 @@ html, body {
     </div>
 
     <div id="stars-wrap"></div>
+    <div id="p3-tree">
+      <svg viewBox="0 0 120 150" aria-hidden="true">
+        <defs>
+          <radialGradient id="hole-grad" cx="50%" cy="45%" r="55%">
+            <stop offset="0" stop-color="#000"/>
+            <stop offset=".75" stop-color="#050302"/>
+            <stop offset="1" stop-color="#2a1d17"/>
+          </radialGradient>
+        </defs>
+        <path d="M44 150 C48 125 46 100 42 78 C36 66 22 58 6 50 L10 44 C24 50 36 56 44 64 C44 46 36 28 24 10 L30 6 C42 24 52 42 54 60 C58 40 66 22 80 4 L86 8 C74 26 66 46 64 66 C78 56 96 50 116 44 L118 50 C98 58 82 66 76 80 C72 102 72 126 78 150 Z" fill="#1b1512"/>
+        <path d="M50 150 C52 128 50 108 48 90 M70 150 C68 130 70 110 72 92" stroke="#2a201b" stroke-width="2" fill="none"/>
+        <path d="M14 47 C20 62 16 74 22 88 M96 52 C92 66 100 76 94 92" stroke="#3a1a1e" stroke-width="1.6" fill="none" opacity=".8"/>
+        <ellipse cx="60" cy="100" rx="15" ry="20" fill="url(#hole-grad)" stroke="#0d0907" stroke-width="2"/>
+      </svg>
+    </div>
+    <div id="p3-msg"></div>
     <div id="p3-portal"></div>
     <div id="demo">
       <svg viewBox="0 0 64 80" aria-hidden="true">
@@ -1246,7 +1270,7 @@ function openModal(idx) {
 function closeModal() {
   modalWrap.classList.remove('open');
   if (phase === 2) {
-    ytPlay();
+    themePlay();
     setTimeout(startStIntro, 400);
   } else if (collected < TOTAL) {
     gameOn = true;
@@ -1409,6 +1433,8 @@ function loop() {
     if (mag > 6) { dx = (swipeDX / mag) * SPEED; dy = (swipeDY / mag) * SPEED; }
   }
 
+  if (phase === 3 && p3State === 'hidden') { dx = 0; dy = 0; }
+
   px = Math.max(PSIZE/2, Math.min(w - PSIZE/2, px + dx));
   py = Math.max(PSIZE/2, Math.min(h - PSIZE/2, py + dy));
 
@@ -1545,7 +1571,6 @@ function startPhase2() {
   kUp = kDown = kLeft = kRight = false;
   swipeActive = false; swipeDX = 0; swipeDY = 0;
   gameWorld.classList.add('phase2');
-  loadYT();
   starsWrap.innerHTML = '';
   gemEls  = [];
   noteEls = [];
@@ -1587,7 +1612,9 @@ function reachGoal() {
 }
 
 function startGame() {
-  ytStop();
+  themeStop();
+  playerEl.classList.remove('hiding');
+  p3Msg.classList.remove('show');
   stopDrone();
   lightsTimers.forEach(clearTimeout);
   phase = 1;
@@ -1628,74 +1655,119 @@ const screenSt     = document.getElementById('screen-st');
 const screenLights = document.getElementById('screen-lights');
 const btnSt        = document.getElementById('btn-st');
 const btnReplay3   = document.getElementById('btn-replay-3');
-const stTv         = document.getElementById('st-tv');
+const p3Tree       = document.getElementById('p3-tree');
+const p3Msg        = document.getElementById('p3-msg');
 const demoEl       = document.getElementById('demo');
 const p3Portal     = document.getElementById('p3-portal');
 const p3Caught     = document.getElementById('p3-caught');
 const lightsWall   = document.getElementById('lights-wall');
 const lightsMsg    = document.getElementById('lights-msg');
 
-const ST_VIDEO    = '4kW0aV6LxJw';
 const P3_START    = { x: .16, y: .84 };
 const P3_GOAL     = { x: .78, y: .28 };
-const P3_DEMO     = { x: .12, y: .16 };
+const P3_DEMO     = { x: .10, y: .38 };
 const DEMO_SPEED  = 2.1;   // o jogador anda a 3.6 por frame
 const DEMO_MAX    = 3.0;
 const DEMO_RAMP   = 600;   // frames até chegar na velocidade máxima
 const DEMO_WAIT   = 75;    // frames parado antes de começar a perseguir
 const DEMO_HIT    = 40;
-const HINT_P3     = 'FUJA DO DEMOGORGON ATÉ O PORTAL';
+const HINT_P3     = 'ESCONDA-SE NA ÁRVORE, DEPOIS CORRA PRO PORTAL';
+const P3_HOLE     = { x: .5, y: .62 };   // buraco da árvore
+const HOLE_R      = 30;
+const DEMO_WAIT2  = 100;   // frames até ele voltar depois que ela sai da árvore
 const WALL_ROWS   = ['ABCDEFGH', 'IJKLMNOPQ', 'RSTUVWXYZ'];
 const WALL_TEXT   = 'EU ADORO VOCE';
 const BULB_COLORS = ['#ff3b3b', '#3bff6a', '#3bb4ff', '#ffd23b', '#ff5fd2'];
 
-let demoX = 0, demoY = 0, demoFrames = 0;
+let demoX = 0, demoY = 0, demoFrames = 0, demoGone = false;
+let holeX = 0, holeY = 0;
+let p3State = 'chase', hideStep = 'approach', hideTimer = 0, p3MsgTimer;
 let p3StartDist = 1, lastBeat = 0;
 let lightsTimers = [];
 let bulbMap = {}, allBulbs = [];
 let drone = null;
 
-let ytPlayer = null, ytReady = false, ytWantPlay = false;
+// Trilha original no clima dos anos 80 (sintetizador em arpejo), gerada no navegador.
+const THEME_STEP   = 60 / 100 / 4;   // semicolcheia a 100 bpm
+const THEME_CHORDS = [               // Lá menor, Fá, Sol, Mi menor (MIDI; o primeiro é o baixo)
+  [45, 52, 57, 60, 64],
+  [41, 53, 57, 60, 65],
+  [43, 55, 59, 62, 67],
+  [40, 52, 55, 59, 64],
+];
+const THEME_ARP = [1, 2, 3, 4, 3, 2, 3, 4, 1, 2, 3, 4, 3, 2, 4, 3];
+let theme = null;
 
-function loadYT() {
-  if (document.getElementById('yt-api')) return;
-  const s = document.createElement('script');
-  s.id  = 'yt-api';
-  s.src = 'https://www.youtube.com/iframe_api';
-  document.head.appendChild(s);
+function themeNote(midi, t, dur, vol, type, cutoff, toDelay, attack = .01) {
+  const { ctx, master, delay } = theme;
+  const o = ctx.createOscillator();
+  o.type = type;
+  o.frequency.value = 440 * Math.pow(2, (midi - 69) / 12);
+  const f = ctx.createBiquadFilter();
+  f.type = 'lowpass'; f.frequency.value = cutoff; f.Q.value = 5;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + attack);
+  g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(f); f.connect(g); g.connect(master);
+  if (toDelay) g.connect(delay);
+  o.start(t); o.stop(t + dur + .05);
 }
-window.onYouTubeIframeAPIReady = () => {
-  ytPlayer = new YT.Player('st-player', {
-    width: '100%', height: '100%', videoId: ST_VIDEO,
-    playerVars: { playsinline: 1, rel: 0, controls: 1 },
-    events: {
-      onReady: () => {
-        ytReady = true;
-        if (muted) ytPlayer.mute();
-        if (ytWantPlay) ytPlayer.playVideo();
-      },
-      onStateChange: e => {
-        if (e.data === YT.PlayerState.PLAYING) {
-          stTv.classList.remove('need-tap');
-          if (!ytWantPlay) ytPlayer.pauseVideo();
-        }
-      },
-    },
-  });
-};
-function ytPlay() {
-  ytWantPlay = true;
-  if (ytReady) { ytPlayer.seekTo(0, true); ytPlayer.playVideo(); }
-  // se o navegador bloquear o som automático, pede um toque na TV
-  setTimeout(() => {
-    const playing = ytReady && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
-    if (ytWantPlay && !playing) stTv.classList.add('need-tap');
-  }, 2500);
+
+function themeTick() {
+  if (!theme) return;
+  const { ctx } = theme;
+  while (theme.next < ctx.currentTime + .15) {
+    const s   = theme.step;
+    const ch  = THEME_CHORDS[Math.floor(s / 16) % THEME_CHORDS.length];
+    const i   = s % 16;
+    const cut = 1300 + 900 * Math.sin(s / 20);
+    themeNote(ch[THEME_ARP[i]] + 12, theme.next, THEME_STEP * .9, .08, 'sawtooth', cut, true);
+    if (i === 0) {
+      themeNote(ch[0] - 12, theme.next, THEME_STEP * 16, .2, 'sawtooth', 240, false, .25);
+      themeNote(ch[0] + 12, theme.next, THEME_STEP * 16, .035, 'square', 700, true, .6);
+    }
+    if (i % 4 === 0) themeNote(ch[0], theme.next, .14, .07, 'square', 420, false);
+    theme.step++;
+    theme.next += THEME_STEP;
+  }
 }
-function ytStop() {
-  ytWantPlay = false;
-  stTv.classList.remove('need-tap');
-  if (ytReady) ytPlayer.pauseVideo();
+
+function themePlay() {
+  themeStop();
+  if (muted) return;
+  try {
+    const ctx = ensureAudio();
+    if (ctx.state === 'suspended') ctx.resume();
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(.0001, ctx.currentTime);
+    master.gain.exponentialRampToValueAtTime(.55, ctx.currentTime + 1.2);
+    master.connect(ctx.destination);
+    const delay = ctx.createDelay();
+    delay.delayTime.value = THEME_STEP * 3;
+    const fb = ctx.createGain();
+    fb.gain.value = .33;
+    const tone = ctx.createBiquadFilter();
+    tone.type = 'lowpass'; tone.frequency.value = 1800;
+    delay.connect(tone); tone.connect(fb); fb.connect(delay); tone.connect(master);
+    theme = { ctx, master, delay, step: 0, next: ctx.currentTime + .08, timer: null };
+    theme.timer = setInterval(themeTick, 25);
+    themeTick();
+  } catch(e) {}
+}
+
+function themeStop() {
+  if (!theme) return;
+  const t = theme;
+  theme = null;
+  clearInterval(t.timer);
+  try {
+    const now = t.ctx.currentTime;
+    t.master.gain.cancelScheduledValues(now);
+    t.master.gain.setValueAtTime(Math.max(t.master.gain.value, .0001), now);
+    t.master.gain.exponentialRampToValueAtTime(.0001, now + .6);
+    setTimeout(() => t.master.disconnect(), 900);
+  } catch(e) {}
 }
 
 function beep(type, f0, f1, dur, vol, delay = 0) {
@@ -1815,32 +1887,97 @@ function layoutPhase3() {
   goalY = P3_GOAL.y * h;
   p3Portal.style.left = `${goalX - 29}px`;
   p3Portal.style.top  = `${goalY - 42}px`;
+  holeX = P3_HOLE.x * w;
+  holeY = P3_HOLE.y * h;
+  p3Tree.style.left = `${holeX - 60}px`;
+  p3Tree.style.top  = `${holeY - 100}px`;
+  if (p3State === 'hidden') { px = holeX; py = holeY; drawPlayer(); }
+}
+
+function drawPlayer() {
+  playerEl.style.left = `${px - PSIZE/2}px`;
+  playerEl.style.top  = `${py - PSIZE/2}px`;
 }
 
 function drawDemo() {
   demoEl.style.left = `${demoX - 32}px`;
   demoEl.style.top  = `${demoY - 40}px`;
-  demoEl.classList.toggle('waiting', demoFrames < DEMO_WAIT);
+  demoEl.classList.toggle('waiting', p3State === 'chase' && demoFrames < DEMO_WAIT);
+  demoEl.classList.toggle('gone', demoGone);
 }
 
+// anda até (tx, ty); devolve true quando chegou
+function moveDemoToward(tx, ty, sp) {
+  const ddx = tx - demoX, ddy = ty - demoY;
+  const dd  = Math.hypot(ddx, ddy);
+  if (dd <= sp) { demoX = tx; demoY = ty; return true; }
+  demoX += ddx / dd * sp;
+  demoY += ddy / dd * sp;
+  return false;
+}
+
+function setP3Msg(text, ms) {
+  clearTimeout(p3MsgTimer);
+  p3Msg.textContent = text;
+  p3Msg.classList.add('show');
+  if (ms) p3MsgTimer = setTimeout(() => p3Msg.classList.remove('show'), ms);
+}
+
+// etapa 1: o demogorgon persegue e ela precisa chegar no buraco da árvore
 function placePhase3() {
   const { w, h } = worldSize();
+  p3State  = 'chase';
+  demoGone = false;
+  playerEl.classList.remove('hiding');
+  p3Portal.classList.add('closed');
   layoutPhase3();
   px = Math.max(PSIZE/2, Math.min(w - PSIZE/2, P3_START.x * w));
   py = Math.max(PSIZE/2, Math.min(h - PSIZE/2, P3_START.y * h));
-  playerEl.style.left = `${px - PSIZE/2}px`;
-  playerEl.style.top  = `${py - PSIZE/2}px`;
+  drawPlayer();
   demoX = P3_DEMO.x * w;
   demoY = P3_DEMO.y * h;
   demoFrames = 0;
   drawDemo();
   gameWorld.style.setProperty('--danger', '0');
   progressFill.style.width = '0%';
+  p3StartDist = Math.max(HOLE_R + 1, Math.hypot(px - holeX, py - holeY));
+  setP3Msg('ESCONDA-SE NO BURACO DA ÁRVORE!', 3500);
+}
+
+// etapa 2: escondida, o demogorgon chega, fareja e vai embora
+function hideInTree() {
+  p3State  = 'hidden';
+  hideStep = 'approach';
+  hideTimer = 0;
+  if (demoGone || demoFrames < DEMO_WAIT) { demoGone = false; demoFrames = DEMO_WAIT; }
+  px = holeX; py = holeY;
+  drawPlayer();
+  playerEl.classList.add('hiding');
+  progressFill.style.width = '50%';
+  setP3Msg('SHHH... FIQUE QUIETINHA', 0);
+}
+
+// etapa 3: o portal abre e ela corre até ele
+function placeEscape() {
+  const { h } = worldSize();
+  p3State = 'escape';
+  playerEl.classList.remove('hiding');
+  p3Portal.classList.remove('closed');
+  px = holeX; py = holeY;
+  drawPlayer();
+  demoX = -40;
+  demoY = P3_DEMO.y * h;
+  demoFrames = 0;
+  demoGone = true;
+  drawDemo();
+  gameWorld.style.setProperty('--danger', '0');
   p3StartDist = Math.max(COLL_R + 1, Math.hypot(px - goalX, py - goalY));
+  setP3Msg('AGORA! CORRE PRO PORTAL!', 2500);
+  playCollect();
 }
 
 function startPhase3() {
-  ytStop();
+  themeStop();
   phase = 3;
   kUp = kDown = kLeft = kRight = false;
   swipeActive = false; swipeDX = 0; swipeDY = 0;
@@ -1865,17 +2002,45 @@ function startPhase3() {
 }
 
 function phase3Step() {
+  const { w, h } = worldSize();
   demoFrames++;
-  if (demoFrames > DEMO_WAIT) {
-    const sp  = DEMO_SPEED + (DEMO_MAX - DEMO_SPEED) * Math.min(1, (demoFrames - DEMO_WAIT) / DEMO_RAMP);
-    const ddx = px - demoX, ddy = py - demoY;
-    const dd  = Math.hypot(ddx, ddy) || 1;
-    demoX += ddx / dd * sp;
-    demoY += ddy / dd * sp;
+
+  if (p3State === 'hidden') {
+    if (hideStep === 'approach') {
+      if (moveDemoToward(holeX - 78, holeY - 18, 2.2)) {
+        hideStep = 'sniff'; hideTimer = 0;
+        setP3Msg('ELE ESTÁ FAREJANDO...', 0);
+      }
+    } else if (hideStep === 'sniff') {
+      hideTimer++;
+      demoX += Math.sin(hideTimer / 5) * .9;
+      if (hideTimer > 110) {
+        hideStep = 'leave'; hideTimer = 0;
+        setP3Msg('SHHH... FIQUE QUIETINHA', 0);
+      }
+    } else if (hideStep === 'leave') {
+      if (!demoGone) {
+        moveDemoToward(-60, demoY, 2.6);
+        if (demoX < -40) demoGone = true;
+      } else if (++hideTimer > 45) {
+        placeEscape();
+      }
+    }
+  } else {
+    const wait = p3State === 'chase' ? DEMO_WAIT : DEMO_WAIT2;
+    if (p3State === 'escape' && demoFrames === wait) {
+      demoGone = false;
+      demoX = -30;
+      demoY = P3_DEMO.y * h;
+    }
+    if (demoFrames > wait) {
+      const sp = DEMO_SPEED + (DEMO_MAX - DEMO_SPEED) * Math.min(1, (demoFrames - wait) / DEMO_RAMP);
+      moveDemoToward(px, py, sp);
+    }
   }
   drawDemo();
 
-  const dDemo = Math.hypot(px - demoX, py - demoY);
+  const dDemo  = demoGone ? Infinity : Math.hypot(px - demoX, py - demoY);
   const danger = Math.max(0, Math.min(1, 1 - (dDemo - DEMO_HIT) / 150));
   gameWorld.style.setProperty('--danger', danger.toFixed(2));
   if (dDemo < 170 && performance.now() - lastBeat > (dDemo < 90 ? 330 : 560)) {
@@ -1883,28 +2048,38 @@ function phase3Step() {
     playThump();
   }
 
-  const dist = Math.hypot(px - goalX, py - goalY);
-  const prog = 1 - (dist - COLL_R) / (p3StartDist - COLL_R);
-  progressFill.style.width = `${Math.max(0, Math.min(1, prog)) * 100}%`;
-
-  if (dist < COLL_R) reachPortal();
-  else if (dDemo < DEMO_HIT) caughtByDemo();
+  if (p3State === 'chase') {
+    const dist = Math.hypot(px - holeX, py - holeY);
+    const prog = 1 - (dist - HOLE_R) / (p3StartDist - HOLE_R);
+    progressFill.style.width = `${Math.max(0, Math.min(1, prog)) * 45}%`;
+    if (dist < HOLE_R) hideInTree();
+    else if (dDemo < DEMO_HIT) caughtByDemo();
+  } else if (p3State === 'escape') {
+    const dist = Math.hypot(px - goalX, py - goalY);
+    const prog = 1 - (dist - COLL_R) / (p3StartDist - COLL_R);
+    progressFill.style.width = `${50 + Math.max(0, Math.min(1, prog)) * 50}%`;
+    if (dist < COLL_R) reachPortal();
+    else if (dDemo < DEMO_HIT) caughtByDemo();
+  }
 }
 
 function caughtByDemo() {
   gameOn = false;
+  const was = p3State;
   playGrowl();
+  p3Msg.classList.remove('show');
   p3Caught.classList.add('show');
   setTimeout(() => {
     p3Caught.classList.remove('show');
     if (phase !== 3 || !screenGame.classList.contains('active')) return;
-    placePhase3();
+    if (was === 'escape') placeEscape(); else placePhase3();
     gameOn = true;
   }, 1500);
 }
 
 function reachPortal() {
   gameOn = false;
+  p3Msg.classList.remove('show');
   stopDrone();
   spawnParticles(goalX, goalY);
   playCollect();
@@ -1946,7 +2121,7 @@ function startLights() {
 
 muteBtn.addEventListener('click', () => {
   if (drone) drone.g.gain.value = muted ? 0 : .045;
-  if (ytReady) { if (muted) ytPlayer.mute(); else ytPlayer.unMute(); }
+  if (muted) themeStop();
 });
 
 btnStart.addEventListener('click',  startGame);
