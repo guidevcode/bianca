@@ -870,18 +870,6 @@ html, body {
   opacity: 0; pointer-events: none; z-index: -1; overflow: hidden;
 }
 #yt-hidden iframe { width: 100%; height: 100%; border: 0; }
-#btn-music {
-  display: none;
-  font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700;
-  font-size: clamp(12px, 3.6vw, 15px); letter-spacing: .15em;
-  color: #fff; background: rgba(0,0,0,.55);
-  border: 2px solid #e50914; border-radius: 4px;
-  padding: 14px 22px; min-height: 50px; cursor: pointer;
-  text-shadow: 0 0 8px rgba(229,9,20,.9);
-  box-shadow: 0 0 18px rgba(229,9,20,.45);
-}
-#btn-music.show { display: block; animation: riseIn .6s ease both; }
-
 #scanlines {
   position: fixed; inset: 0; pointer-events: none; z-index: 999;
   background: repeating-linear-gradient(
@@ -969,7 +957,6 @@ html, body {
   <div class="lights-wrap">
     <div id="lights-wall"></div>
     <div id="lights-msg">EU ADORO VOCÊ ❤️</div>
-    <button id="btn-music">🔊 TOCAR A MÚSICA</button>
     <button class="btn-replay" id="btn-replay-3">↺ JOGAR DE NOVO</button>
   </div>
 </div>
@@ -1683,7 +1670,6 @@ const p3Portal     = document.getElementById('p3-portal');
 const p3Caught     = document.getElementById('p3-caught');
 const lightsWall   = document.getElementById('lights-wall');
 const lightsMsg    = document.getElementById('lights-msg');
-const btnMusic     = document.getElementById('btn-music');
 
 // "Kids" (Stranger Things) tocando direto do YouTube, com o player invisível
 const INTRO_VIDEO = '_kzyPAoGazw';   // abertura "Mundo Invertido"
@@ -1699,6 +1685,7 @@ function loadYT() {
 }
 window.onYouTubeIframeAPIReady = () => {
   ytPlayer = new YT.Player('yt-player', {
+    host: 'https://www.youtube-nocookie.com',
     width: '200', height: '200', videoId: ytVideo,
     playerVars: { playsinline: 1, controls: 0, rel: 0, disablekb: 1 },
     events: {
@@ -1709,7 +1696,6 @@ window.onYouTubeIframeAPIReady = () => {
       },
       onStateChange: e => {
         if (e.data === YT.PlayerState.PLAYING) {
-          btnMusic.classList.remove('show');
           if (!ytWantPlay) ytPlayer.pauseVideo();
         }
         if (e.data === YT.PlayerState.ENDED && ytWantPlay) {
@@ -1732,7 +1718,6 @@ function ytPlay(id, onFail) {
 }
 function ytStop() {
   ytWantPlay = false;
-  btnMusic.classList.remove('show');
   if (ytReady) ytPlayer.pauseVideo();
 }
 
@@ -2191,7 +2176,7 @@ function startLights() {
     playFinal();
     lightsMsg.classList.add('show');
     btnReplay3.classList.add('show');
-    ytPlay(END_VIDEO, () => btnMusic.classList.add('show'));
+    ytPlay(END_VIDEO, () => {});
   });
 }
 
@@ -2204,7 +2189,6 @@ muteBtn.addEventListener('click', () => {
 btnStart.addEventListener('click',  startGame);
 btnSt.addEventListener('click',     startPhase3);
 btnReplay3.addEventListener('click', startGame);
-btnMusic.addEventListener('click', () => { if (ytReady) { ytPlayer.unMute(); ytPlayer.playVideo(); } });
 btnPhase2.addEventListener('click', startPhase2);
 btnReplay.addEventListener('click', playSuspense);
 
