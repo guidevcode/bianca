@@ -1289,7 +1289,7 @@ function openModal(idx) {
 function closeModal() {
   modalWrap.classList.remove('open');
   if (phase === 2) {
-    themePlay();
+    ytPlay(INTRO_VIDEO, themePlay);   // se o YouTube não tocar, usa a trilha de sintetizador
     setTimeout(startStIntro, 400);
   } else if (collected < TOTAL) {
     gameOn = true;
@@ -1590,6 +1590,7 @@ function startPhase2() {
   kUp = kDown = kLeft = kRight = false;
   swipeActive = false; swipeDX = 0; swipeDY = 0;
   gameWorld.classList.add('phase2');
+  loadYT();
   starsWrap.innerHTML = '';
   gemEls  = [];
   noteEls = [];
@@ -1685,8 +1686,9 @@ const lightsMsg    = document.getElementById('lights-msg');
 const btnMusic     = document.getElementById('btn-music');
 
 // "Kids" (Stranger Things) tocando direto do YouTube, com o player invisível
-const END_VIDEO = '4kW0aV6LxJw';
-let ytPlayer = null, ytReady = false, ytWantPlay = false;
+const INTRO_VIDEO = '_kzyPAoGazw';   // abertura "Mundo Invertido"
+const END_VIDEO   = '4kW0aV6LxJw';   // "Kids", no final
+let ytPlayer = null, ytReady = false, ytWantPlay = false, ytVideo = END_VIDEO;
 
 function loadYT() {
   if (document.getElementById('yt-api')) return;
@@ -1697,13 +1699,13 @@ function loadYT() {
 }
 window.onYouTubeIframeAPIReady = () => {
   ytPlayer = new YT.Player('yt-player', {
-    width: '200', height: '200', videoId: END_VIDEO,
+    width: '200', height: '200', videoId: ytVideo,
     playerVars: { playsinline: 1, controls: 0, rel: 0, disablekb: 1 },
     events: {
       onReady: () => {
         ytReady = true;
         if (muted) ytPlayer.mute();
-        if (ytWantPlay) ytPlayer.playVideo();
+        if (ytWantPlay) ytPlayer.loadVideoById(ytVideo);
       },
       onStateChange: e => {
         if (e.data === YT.PlayerState.PLAYING) {
@@ -1718,13 +1720,14 @@ window.onYouTubeIframeAPIReady = () => {
     },
   });
 };
-function ytPlay() {
+function ytPlay(id, onFail) {
   ytWantPlay = true;
-  if (ytReady) { ytPlayer.seekTo(0, true); ytPlayer.unMute(); ytPlayer.playVideo(); }
-  // se o navegador bloquear o som automático, mostra o botão de tocar
+  ytVideo = id;
+  if (ytReady) { ytPlayer.unMute(); ytPlayer.loadVideoById(id); }
+  // se o navegador bloquear o som automático, usa o plano B
   setTimeout(() => {
     const playing = ytReady && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
-    if (ytWantPlay && !playing) btnMusic.classList.add('show');
+    if (ytWantPlay && ytVideo === id && !playing) onFail();
   }, 2500);
 }
 function ytStop() {
@@ -2048,6 +2051,7 @@ function placeEscape() {
 
 function startPhase3() {
   themeStop();
+  ytStop();
   loadYT();
   phase = 3;
   kUp = kDown = kLeft = kRight = false;
@@ -2187,7 +2191,7 @@ function startLights() {
     playFinal();
     lightsMsg.classList.add('show');
     btnReplay3.classList.add('show');
-    ytPlay();
+    ytPlay(END_VIDEO, () => btnMusic.classList.add('show'));
   });
 }
 
