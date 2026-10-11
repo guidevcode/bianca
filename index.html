@@ -865,6 +865,23 @@ html, body {
 #btn-replay-3 { opacity: 0; animation: none; pointer-events: none; }
 #btn-replay-3.show { animation: riseIn .8s ease .4s both; pointer-events: auto; }
 
+#yt-hidden {
+  position: fixed; left: 0; bottom: 0; width: 200px; height: 200px;
+  opacity: 0; pointer-events: none; z-index: -1; overflow: hidden;
+}
+#yt-hidden iframe { width: 100%; height: 100%; border: 0; }
+#btn-music {
+  display: none;
+  font-family: 'Libre Baskerville', Georgia, serif; font-weight: 700;
+  font-size: clamp(12px, 3.6vw, 15px); letter-spacing: .15em;
+  color: #fff; background: rgba(0,0,0,.55);
+  border: 2px solid #e50914; border-radius: 4px;
+  padding: 14px 22px; min-height: 50px; cursor: pointer;
+  text-shadow: 0 0 8px rgba(229,9,20,.9);
+  box-shadow: 0 0 18px rgba(229,9,20,.45);
+}
+#btn-music.show { display: block; animation: riseIn .6s ease both; }
+
 #scanlines {
   position: fixed; inset: 0; pointer-events: none; z-index: 999;
   background: repeating-linear-gradient(
@@ -896,6 +913,7 @@ html, body {
 <body>
 
 <div id="scanlines"></div>
+<div id="yt-hidden"><div id="yt-player"></div></div>
 
 <div id="screen-intro" class="screen active">
   <div class="stars-bg" id="stars-bg"></div>
@@ -951,6 +969,7 @@ html, body {
   <div class="lights-wrap">
     <div id="lights-wall"></div>
     <div id="lights-msg">EU ADORO VOCÊ ❤️</div>
+    <button id="btn-music">🔊 TOCAR A MÚSICA</button>
     <button class="btn-replay" id="btn-replay-3">↺ JOGAR DE NOVO</button>
   </div>
 </div>
@@ -1613,6 +1632,7 @@ function reachGoal() {
 
 function startGame() {
   themeStop();
+  ytStop();
   playerEl.classList.remove('hiding');
   p3Msg.classList.remove('show');
   stopDrone();
@@ -1662,6 +1682,56 @@ const p3Portal     = document.getElementById('p3-portal');
 const p3Caught     = document.getElementById('p3-caught');
 const lightsWall   = document.getElementById('lights-wall');
 const lightsMsg    = document.getElementById('lights-msg');
+const btnMusic     = document.getElementById('btn-music');
+
+// "Kids" (Stranger Things) tocando direto do YouTube, com o player invisível
+const END_VIDEO = '4kW0aV6LxJw';
+let ytPlayer = null, ytReady = false, ytWantPlay = false;
+
+function loadYT() {
+  if (document.getElementById('yt-api')) return;
+  const sc = document.createElement('script');
+  sc.id  = 'yt-api';
+  sc.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(sc);
+}
+window.onYouTubeIframeAPIReady = () => {
+  ytPlayer = new YT.Player('yt-player', {
+    width: '200', height: '200', videoId: END_VIDEO,
+    playerVars: { playsinline: 1, controls: 0, rel: 0, disablekb: 1 },
+    events: {
+      onReady: () => {
+        ytReady = true;
+        if (muted) ytPlayer.mute();
+        if (ytWantPlay) ytPlayer.playVideo();
+      },
+      onStateChange: e => {
+        if (e.data === YT.PlayerState.PLAYING) {
+          btnMusic.classList.remove('show');
+          if (!ytWantPlay) ytPlayer.pauseVideo();
+        }
+        if (e.data === YT.PlayerState.ENDED && ytWantPlay) {
+          ytPlayer.seekTo(0, true);
+          ytPlayer.playVideo();
+        }
+      },
+    },
+  });
+};
+function ytPlay() {
+  ytWantPlay = true;
+  if (ytReady) { ytPlayer.seekTo(0, true); ytPlayer.unMute(); ytPlayer.playVideo(); }
+  // se o navegador bloquear o som automático, mostra o botão de tocar
+  setTimeout(() => {
+    const playing = ytReady && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+    if (ytWantPlay && !playing) btnMusic.classList.add('show');
+  }, 2500);
+}
+function ytStop() {
+  ytWantPlay = false;
+  btnMusic.classList.remove('show');
+  if (ytReady) ytPlayer.pauseVideo();
+}
 
 const P3_START    = { x: .16, y: .84 };
 const P3_GOAL     = { x: .78, y: .28 };
@@ -1978,6 +2048,7 @@ function placeEscape() {
 
 function startPhase3() {
   themeStop();
+  loadYT();
   phase = 3;
   kUp = kDown = kLeft = kRight = false;
   swipeActive = false; swipeDX = 0; swipeDY = 0;
@@ -2116,17 +2187,20 @@ function startLights() {
     playFinal();
     lightsMsg.classList.add('show');
     btnReplay3.classList.add('show');
+    ytPlay();
   });
 }
 
 muteBtn.addEventListener('click', () => {
   if (drone) drone.g.gain.value = muted ? 0 : .045;
   if (muted) themeStop();
+  if (ytReady) { if (muted) ytPlayer.mute(); else ytPlayer.unMute(); }
 });
 
 btnStart.addEventListener('click',  startGame);
 btnSt.addEventListener('click',     startPhase3);
 btnReplay3.addEventListener('click', startGame);
+btnMusic.addEventListener('click', () => { if (ytReady) { ytPlayer.unMute(); ytPlayer.playVideo(); } });
 btnPhase2.addEventListener('click', startPhase2);
 btnReplay.addEventListener('click', playSuspense);
 
