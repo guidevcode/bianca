@@ -1622,7 +1622,7 @@ function startGame() {
   themeStop();
   ytStop();
   introAudio.pause();
-  kidsAudio.pause();
+  stopKids();
   playerEl.classList.remove('hiding');
   p3Msg.classList.remove('show');
   stopDrone();
@@ -1731,11 +1731,48 @@ function playTrack(audio, ytId, onFail) {
   if (p) p.catch(() => ytPlay(ytId, onFail));
 }
 
-// No iPhone, um áudio só pode tocar sozinho depois se já tocou num toque da pessoa
-function unlockAudio(audio) {
-  audio.muted = true;
-  const p = audio.play();
-  if (p) p.then(() => { audio.pause(); audio.currentTime = 0; audio.muted = muted; }).catch(() => {});
+// A "Kids" é carregada antes e tocada pelo Web Audio, que no celular pode começar
+// sozinha depois de liberada por um toque (a liberação usa um som vazio, não a música).
+let kidsBuffer = null, kidsSource = null, kidsGain = null;
+
+function unlockAudioCtx() {
+  try {
+    const ctx = ensureAudio();
+    if (ctx.state === 'suspended') ctx.resume();
+    const src = ctx.createBufferSource();
+    src.buffer = ctx.createBuffer(1, 1, 22050);
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch(e) {}
+}
+
+function loadKidsBuffer() {
+  if (kidsBuffer) return;
+  fetch('img/kids.m4a')
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(data => ensureAudio().decodeAudioData(data))
+    .then(buf => { kidsBuffer = buf; })
+    .catch(() => {});
+}
+
+function playKids() {
+  stopKids();
+  if (!kidsBuffer) { playTrack(kidsAudio, END_VIDEO, () => {}); return; }
+  const ctx = ensureAudio();
+  if (ctx.state === 'suspended') ctx.resume();
+  kidsGain = ctx.createGain();
+  kidsGain.gain.value = muted ? 0 : 1;
+  kidsGain.connect(ctx.destination);
+  kidsSource = ctx.createBufferSource();
+  kidsSource.buffer = kidsBuffer;
+  kidsSource.loop = true;
+  kidsSource.connect(kidsGain);
+  kidsSource.start();
+}
+
+function stopKids() {
+  if (kidsSource) { try { kidsSource.stop(); } catch(e) {} kidsSource = null; }
+  kidsAudio.pause();
 }
 
 function ytStop() {
@@ -2060,7 +2097,8 @@ function startPhase3() {
   themeStop();
   ytStop();
   introAudio.pause();
-  unlockAudio(kidsAudio);
+  unlockAudioCtx();
+  loadKidsBuffer();
   loadYT();
   phase = 3;
   kUp = kDown = kLeft = kRight = false;
@@ -2200,7 +2238,7 @@ function startLights() {
     playFinal();
     lightsMsg.classList.add('show');
     btnReplay3.classList.add('show');
-    playTrack(kidsAudio, END_VIDEO, () => {});
+    playKids();
   });
 }
 
@@ -2208,6 +2246,7 @@ muteBtn.addEventListener('click', () => {
   if (drone) drone.g.gain.value = muted ? 0 : .045;
   if (muted) themeStop();
   introAudio.muted = kidsAudio.muted = muted;
+  if (kidsGain) kidsGain.gain.value = muted ? 0 : 1;
   if (ytReady) { if (muted) ytPlayer.mute(); else ytPlayer.unMute(); }
 });
 
