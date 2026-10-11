@@ -1276,7 +1276,7 @@ function openModal(idx) {
 function closeModal() {
   modalWrap.classList.remove('open');
   if (phase === 2) {
-    ytPlay(INTRO_VIDEO, themePlay);   // se o YouTube não tocar, usa a trilha de sintetizador
+    playTrack(introAudio, INTRO_VIDEO, themePlay);
     setTimeout(startStIntro, 400);
   } else if (collected < TOTAL) {
     gameOn = true;
@@ -1621,6 +1621,8 @@ function reachGoal() {
 function startGame() {
   themeStop();
   ytStop();
+  introAudio.pause();
+  kidsAudio.pause();
   playerEl.classList.remove('hiding');
   p3Msg.classList.remove('show');
   stopDrone();
@@ -1716,6 +1718,26 @@ function ytPlay(id, onFail) {
     if (ytWantPlay && ytVideo === id && !playing) onFail();
   }, 2500);
 }
+// Músicas em arquivo (img/intro.m4a e img/kids.m4a). Se o arquivo não existir
+// ou não puder tocar, cai para o YouTube e, por último, para o plano B.
+const introAudio = new Audio('img/intro.m4a');
+const kidsAudio  = new Audio('img/kids.m4a');
+[introAudio, kidsAudio].forEach(a => { a.loop = true; a.preload = 'auto'; });
+
+function playTrack(audio, ytId, onFail) {
+  audio.muted = muted;
+  audio.currentTime = 0;
+  const p = audio.play();
+  if (p) p.catch(() => ytPlay(ytId, onFail));
+}
+
+// No iPhone, um áudio só pode tocar sozinho depois se já tocou num toque da pessoa
+function unlockAudio(audio) {
+  audio.muted = true;
+  const p = audio.play();
+  if (p) p.then(() => { audio.pause(); audio.currentTime = 0; audio.muted = muted; }).catch(() => {});
+}
+
 function ytStop() {
   ytWantPlay = false;
   if (ytReady) ytPlayer.pauseVideo();
@@ -2037,6 +2059,8 @@ function placeEscape() {
 function startPhase3() {
   themeStop();
   ytStop();
+  introAudio.pause();
+  unlockAudio(kidsAudio);
   loadYT();
   phase = 3;
   kUp = kDown = kLeft = kRight = false;
@@ -2176,13 +2200,14 @@ function startLights() {
     playFinal();
     lightsMsg.classList.add('show');
     btnReplay3.classList.add('show');
-    ytPlay(END_VIDEO, () => {});
+    playTrack(kidsAudio, END_VIDEO, () => {});
   });
 }
 
 muteBtn.addEventListener('click', () => {
   if (drone) drone.g.gain.value = muted ? 0 : .045;
   if (muted) themeStop();
+  introAudio.muted = kidsAudio.muted = muted;
   if (ytReady) { if (muted) ytPlayer.mute(); else ytPlayer.unMute(); }
 });
 
